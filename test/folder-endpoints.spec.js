@@ -2,9 +2,9 @@ const knex = require('knex');
 const app = require('../src/app');
 const { TEST_DB_URL } = require('../src/config');
 
-const { makeFoldersArray } = require('./folders.fixtures');
+const { makeFoldersArray, randomFolder } = require('./app.fixtures');
 
-describe('Folder endpoints', () => {
+describe('Folders endpoints', () => {
   let db;
 
   before('set up db instance', () => {
@@ -16,50 +16,135 @@ describe('Folder endpoints', () => {
     app.set('db', db);
   });
 
-  const cleanFolders = () => db.raw('TRUNCATE folders, notes RESTART IDENTITY CASCADE')
-  before('clean the table', cleanFolders);
-  afterEach('clean the table', cleanFolders);
+  const cleanData = () => db.raw('TRUNCATE folders, notes RESTART IDENTITY CASCADE');
+  before('clean the table', cleanData);
+  afterEach('clean the table', cleanData);
 
   after('disconnect from db', () => db.destroy());
 
-  // GET requests (READ)
-  context('Given there are folders in the database', () => {
-    const testFolders = makeFoldersArray();
 
-    beforeEach(() => {
-      return db
-        .into('folders')
-        .insert(testFolders);
+  // POST requests (CREATE)
+  describe('POST /folders', () => {
+    const testFolder = randomFolder();
+
+    context('Given correct data', () => {
+      it('responds with 201 and adds folder to the table', () => {       
+        return supertest(app)
+          .post('/folders')
+          .send(testFolder)
+          .expect(201, testFolder);
+      });
     });
-
-    it('GET /folders responds with 200 with an array of folders', () => {
-      return supertest(app)
-        .get('/folders')
-        .expect(200, testFolders);
-    });
-
-    it('GET /folders/:id responds with 200 with the specified folder', () => {
-      const id = 2;
-      const expectedFolder = testFolders[id - 1];
-      return supertest(app)
-        .get(`/folders/${id}`)
-        .expect(200, expectedFolder);
+    
+    context('Given incorrect data', () => {
+      const requiredFields = ['name'];
+      requiredFields.forEach(field => {
+        it(`responds with 400 when required field '${field}' is omitted`, () => {
+          const testFolderEdited = {...testFolder};
+          delete testFolderEdited[field];
+          return supertest(app)
+            .post('/folders')
+            .send(testFolderEdited)
+            .expect(400, `'${field}' is required`);
+        });
+      });
     });
 
   });
 
-  context('Given no folders in the database', () => {
-    it('GET /folders responds with 200 with an empty array', () => {
-      return supertest(app)
-        .get('/folders')
-        .expect(200, []);
-    });
 
-    it('GET /folders/:id responds with 404', () => {
-      const id = 2;
-      return supertest(app)
-        .get(`/folders/${id}`)
-        .expect(404, 'Folder not found');
+  // GET requests (READ)
+  describe('GET /folders', () => {
+    context('Given there are folders in the database', () => {
+      const testFolders = makeFoldersArray();
+  
+      beforeEach(() => {
+        return db
+          .into('folders')
+          .insert(testFolders);
+      });
+  
+      it('responds with 200 with an array of folders', () => {
+        return supertest(app)
+          .get('/folders')
+          .expect(200, testFolders);
+      });
+  
+    });
+  
+    context('Given no folders in the database', () => {
+      it('responds with 200 with an empty array', () => {
+        return supertest(app)
+          .get('/folders')
+          .expect(200, []);
+      });
+    });
+  });
+
+  // GET requests (READ)
+  describe('GET /folders/:id', () => {
+    context('Given there are folders in the database', () => {
+      const testFolders = makeFoldersArray();
+  
+      beforeEach(() => {
+        return db
+          .into('folders')
+          .insert(testFolders);
+      });
+  
+      it('responds with 200 with the specified folder', () => {
+        const id = 2;
+        const expectedFolder = testFolders[id - 1];
+        return supertest(app)
+          .get(`/folders/${id}`)
+          .expect(200, expectedFolder);
+      });
+  
+    });
+  
+    context('Given no folders in the database', () => {
+      it('responds with 404', () => {
+        const id = 2;
+        return supertest(app)
+          .get(`/folders/${id}`)
+          .expect(404, 'Folder not found');
+      });
+    });
+  });
+
+  
+  // DELETE requests (DELETE)
+  describe('DELETE /notes/:id', () => {
+    context('Given there are folders in the database', () => {
+      const testFolders = makeFoldersArray();
+  
+      beforeEach(() => {
+        return db
+          .into('folders')
+          .insert(testFolders);
+      });
+  
+      it('responds with 204 and removes the folder', () => {
+        const id = 2;
+        return supertest(app)
+          .delete(`/folders/${id}`)
+          .expect(204)
+          .then(() => {
+            return supertest(app)
+              .get(`/folders/${id}`)
+              .expect(404, 'Folder not found');
+          });
+      });
+  
+    });
+  
+    context('Given no folders in the database', () => {
+      it('responds with 404', () => {
+        const id = 2;
+        return supertest(app)
+          .delete(`/folders/${id}`)
+          .expect(404, 'Folder not found');
+      });
     });
   });
   

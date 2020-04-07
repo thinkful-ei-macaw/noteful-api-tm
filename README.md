@@ -1,2 +1,2 @@
 # noteful-api
-An Express app
+API Server for the Noteful client app, based on PostgreSQL and Express.

@@ -4,7 +4,7 @@ VALUES
   (2, 'Personal'),
   (3, 'School');
 
-INSERT INTO notes (name, content, folderId)
+INSERT INTO notes (name, content, folder_id)
 VALUES
   ('Work Note 1', 'This is a note', 1),
   ('Work Note 2', 'This is a note', 1),
