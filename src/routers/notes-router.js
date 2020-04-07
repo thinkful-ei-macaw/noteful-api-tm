@@ -1,5 +1,6 @@
 const express = require('express');
 const xss = require('xss');
+const uuid = require('uuid');
 
 const notesRouter = express.Router();
 const NotesService = require('../services/app-service')('notes');
@@ -33,9 +34,9 @@ notesRouter.post('/', (req, res, next) => {
     }
   }
 
-  const { id, name, content, folder_id, modified } = req.body;
-  const note = { name, content, folder_id };
-  if (id) note.id = id;
+  const id = uuid.v4();
+  const { name, content, folder_id, modified } = req.body;
+  const note = { id, name, content, folder_id };
   if (modified) note.modified = modified;
 
   NotesService.addItem(db, note)

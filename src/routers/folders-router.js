@@ -1,5 +1,6 @@
 const express = require('express');
 const xss = require('xss');
+const uuid = require('uuid');
 
 const foldersRouter = express.Router();
 const FoldersService = require('../services/app-service')('folders');
@@ -29,9 +30,9 @@ foldersRouter.post('/', (req, res, next) => {
     }
   }
 
-  const { id, name } = req.body;
-  const folder = { name };
-  if (id) folder.id = id;
+  const id = uuid.v4();
+  const { name } = req.body;
+  const folder = { id, name };
 
   FoldersService.addItem(db, folder)
     .then(f => {

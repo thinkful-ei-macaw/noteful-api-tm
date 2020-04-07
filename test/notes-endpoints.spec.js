@@ -35,11 +35,21 @@ describe('Notes endpoints', () => {
     });
 
     context('Given correct data', () => {
-      it('responds with 201 and adds note to the table', () => {       
+      it('responds with 201 and adds note to the table', () => {
+        delete testNote.id;      
         return supertest(app)
           .post('/notes')
           .send(testNote)
-          .expect(201, testNote);
+          .expect(201)
+          .then(res => {
+            expect(res.body.name).to.equal(testNote.name);
+            expect(res.body.content).to.equal(testNote.content);
+            expect(res.body.modified).to.equal(testNote.modified);
+            expect(res.body).to.have.property('id');
+            return supertest(app)
+              .get(`/notes/${res.body.id}`)
+              .expect(200);
+          });
       });
     });
     
@@ -85,8 +95,8 @@ describe('Notes endpoints', () => {
       });
   
       it('GET /notes/:id responds with 200 with the specified note', () => {
-        const id = 2;
-        const expectedNote = testNotes[id - 1];
+        const id = randomNote().id;
+        const expectedNote = testNotes.find(note => note.id === id);
         return supertest(app)
           .get(`/notes/${id}`)
           .expect(200, expectedNote);
@@ -102,7 +112,7 @@ describe('Notes endpoints', () => {
       });
   
       it('GET /notes/:id responds with 404', () => {
-        const id = 2;
+        const id = randomNote().id;
         return supertest(app)
           .get(`/notes/${id}`)
           .expect(404, 'Note not found');
@@ -129,8 +139,8 @@ describe('Notes endpoints', () => {
       });
   
       it('responds with 200 with the specified note', () => {
-        const id = 2;
-        const expectedNote = testNotes[id - 1];
+        const id = randomNote().id;
+        const expectedNote = testNotes.find(note => note.id === id);
         return supertest(app)
           .get(`/notes/${id}`)
           .expect(200, expectedNote);
@@ -140,7 +150,7 @@ describe('Notes endpoints', () => {
   
     context('Given no notes in the database', () => {
       it('responds with 404', () => {
-        const id = 2;
+        const id = randomNote().id;
         return supertest(app)
           .get(`/notes/${id}`)
           .expect(404, 'Note not found');
@@ -168,7 +178,7 @@ describe('Notes endpoints', () => {
       });
   
       it('responds with 204 and removes the note', () => {
-        const id = 2;
+        const id = randomNote().id;
         return supertest(app)
           .delete(`/notes/${id}`)
           .expect(204)

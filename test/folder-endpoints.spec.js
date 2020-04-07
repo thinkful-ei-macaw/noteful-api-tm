@@ -28,11 +28,19 @@ describe('Folders endpoints', () => {
     const testFolder = randomFolder();
 
     context('Given correct data', () => {
-      it('responds with 201 and adds folder to the table', () => {       
+      it('responds with 201 and adds folder to the table', () => {
+        delete testFolder.id;     
         return supertest(app)
           .post('/folders')
           .send(testFolder)
-          .expect(201, testFolder);
+          .expect(201)
+          .then(res => {
+            expect(res.body.name).to.equal(testFolder.name);
+            expect(res.body).to.have.property('id');
+            return supertest(app)
+              .get(`/folders/${res.body.id}`)
+              .expect(200);
+          });
       });
     });
     
@@ -93,8 +101,8 @@ describe('Folders endpoints', () => {
       });
   
       it('responds with 200 with the specified folder', () => {
-        const id = 2;
-        const expectedFolder = testFolders[id - 1];
+        const id = randomFolder().id;
+        const expectedFolder = testFolders.find(folder => folder.id === id);
         return supertest(app)
           .get(`/folders/${id}`)
           .expect(200, expectedFolder);
@@ -104,7 +112,7 @@ describe('Folders endpoints', () => {
   
     context('Given no folders in the database', () => {
       it('responds with 404', () => {
-        const id = 2;
+        const id = randomFolder().id;
         return supertest(app)
           .get(`/folders/${id}`)
           .expect(404, 'Folder not found');
@@ -114,7 +122,7 @@ describe('Folders endpoints', () => {
 
   
   // DELETE requests (DELETE)
-  describe('DELETE /notes/:id', () => {
+  describe('DELETE /folders/:id', () => {
     context('Given there are folders in the database', () => {
       const testFolders = makeFoldersArray();
   
@@ -125,7 +133,7 @@ describe('Folders endpoints', () => {
       });
   
       it('responds with 204 and removes the folder', () => {
-        const id = 2;
+        const id = randomFolder().id;
         return supertest(app)
           .delete(`/folders/${id}`)
           .expect(204)
